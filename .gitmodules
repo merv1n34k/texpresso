@@ -1,4 +1,4 @@
 [submodule "tectonic"]
 	path = tectonic
-	branch = master
-	url = https://github.com/let-def/tectonic.git
+    branch = for-texpresso
+	url = https://github.com/merv1n34k/tectonic.git
