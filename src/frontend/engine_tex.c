@@ -507,7 +507,7 @@ static void answer_query(fz_context *ctx, struct tex_engine *self, query_t *q)
               strncpy(self->deferred.path, q->open.path, sizeof(self->deferred.path) - 1);
               self->deferred.path[sizeof(self->deferred.path) - 1] = '\0';
               self->deferred.query.open.path = self->deferred.path;
-              editor_request_file(q->open.path, strlen(q->open.path));
+              editor_notify_lookup(q->open.path, strlen(q->open.path), true, false);
               break;
             }
             log_fileentry(ctx, self->log, e);
