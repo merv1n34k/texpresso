@@ -1,0 +1,26 @@
+Changes applied to the libpng-1.6.57/ tree as obtained from:
+	https://sourceforge.net/projects/libpng/files/libpng16/1.6.57/
+
+Copied:
+	scripts/pnglibconf.h.prebuilt -> pnglibconf.h
+
+Removed:
+	.github (dir)
+	.appveyor.yml
+	.cmake-format.yaml
+	.editorconfig
+	.editorconfig-checker.json
+	.gitignore
+	.markdownlint.yml
+	.yamllint.yml
+	Makefile.in
+	aclocal.m4
+	compile
+	config.guess
+	config.sub
+	configure
+	depcomp
+	install-sh
+	ltmain.sh
+	missing
+	test-driver

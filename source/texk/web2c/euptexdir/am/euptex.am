@@ -1,0 +1,201 @@
+## $Id: euptex.am 77008 2025-12-02 23:27:19Z karl $
+## texk/web2c/euptexdir/am/euptex.am: Makefile fragment for e-upTeX.
+##
+## Copyright 2015-2025 Karl Berry <tex-live@tug.org>
+## Copyright 2011-2015 Peter Breitenlohner <tex-live@tug.org>
+## You may freely use, modify and/or distribute this file.
+
+## e-upTeX
+##
+if EUPTEX
+bin_PROGRAMS += euptex
+if !UPTEX
+bin_links += euptex$(EXEEXT):uptex
+endif !UPTEX
+bin_links += euptex$(EXEEXT):eptex
+endif EUPTEX
+EXTRA_PROGRAMS += euptex
+
+euptex_CPPFLAGS = $(PTEXENC_INCLUDES) $(AM_CPPFLAGS) -I$(srcdir)/libmd5 $(ZLIB_INCLUDES)
+
+# With --enable-ipc, e-upTeX may need to link with -lsocket.
+euptex_LDADD = libukanji.a $(pproglib) $(PTEXENC_LIBS) $(LDADD) $(ipc_socketlibs) libmd5.a $(ZLIB_LIBS)
+euptex_DEPENDENCIES = libukanji.a $(pproglib) $(PTEXENC_DEPEND) $(default_dependencies) libmd5.a $(ZLIB_DEPEND)
+
+# e-upTeX C sources
+euptex_c_h = euptexini.c euptex0.c euptexcoerce.h euptexd.h
+nodist_euptex_SOURCES = $(euptex_c_h) euptex-pool.c
+dist_euptex_SOURCES = euptexdir/euptexextra.c euptexdir/euptexextra.h
+
+# We must create euptexd.h and [eu]ptexdir/[eu]ptex_version.h before building the euptex_OBJECTS.
+euptex_prereq = euptexd.h etexdir/etex_version.h uptexdir/ptex_version.h \
+	euptexdir/eptex_version.h uptexdir/uptex_version.h
+$(euptex_OBJECTS): $(euptex_prereq)
+
+$(euptex_c_h): euptex-web2c
+	@$(web2c) euptex
+euptex-web2c: euptex.p $(web2c_texmf) euptexdir/euptex.defines
+	@$(web2c) euptex
+
+euptex-pool.c: euptex.pool euptexd.h $(makecpool_stamp)
+	$(makecpool) euptex >$@ || { rm -f $@; exit 1; }
+
+# Tangling e-upTeX
+euptex.p euptex.pool: euptex-tangle
+	$(texmf_tangle) euptex euptex
+euptex-tangle: tangle$(EXEEXT) euptex.web euptex.ch tangle-sh
+	$(texmf_tangle) euptex euptex
+
+# Generate euptex.web
+euptex.web: tie$(EXEEXT) $(euptex_web_srcs)
+	$(tie_m) $(euptex_web_srcs)
+euptex_web_srcs = \
+	tex.web \
+	etexdir/etex.ch \
+	etexdir/tex.ch0 \
+	tex.ch \
+	tracingstacklevels.ch \
+	partoken.ch \
+	locnull-optimize.ch \
+	showstream.ch \
+	zlib-fmt.ch \
+	etexdir/tex.ech
+
+# Generate euptex.ch
+euptex.ch: tie$(EXEEXT) euptex.web $(euptex_ch_srcs)
+	$(tie_c) euptex.web $(euptex_ch_srcs)
+euptex_ch_srcs = \
+	euptexdir/etex.ch0 \
+	uptexdir/ptex-base.ch \
+	uptexdir/uptex-m.ch \
+	euptexdir/eptex.ech \
+	euptexdir/etex.ch1 \
+	$(euptex_ch_synctex) \
+	unbalanced-braces.ch \
+	euptexdir/fam256.ch \
+	euptexdir/pdfutils.ch \
+	euptexdir/suppresserrors.ch \
+	euptexdir/char-warning-eptex.ch \
+	tex-binpool.ch
+
+EXTRA_DIST += $(euptex_web_srcs) $(euptex_ch_srcs) euptexdir/euptex.defines
+
+DISTCLEANFILES += $(nodist_euptex_SOURCES) euptex.web euptex.ch euptex-web2c \
+	euptex.p euptex.pool euptex-tangle
+
+##
+EXTRA_DIST += \
+	euptexdir/COPYRIGHT \
+	euptexdir/COPYRIGHT.jis \
+	euptexdir/ChangeLog \
+	euptexdir/EUPTEX.txt
+
+# emacs-page
+# e-upTeX Tests
+#
+euptex_tests = \
+	euptexdir/euptriptest.test euptexdir/eptriptest.test \
+	euptexdir/pdfprimitive.test \
+	euptexdir/eupver.test \
+	euptexdir/upkcat.test \
+	euptexdir/wcfname.test euptexdir/wcfname0.test \
+	euptexdir/euptex-ctrlsym.test \
+	euptexdir/euptex-prntknj.test \
+	euptexdir/euptex-kinsoku.test \
+	euptexdir/euptex-ofm.test euptexdir/euptex-prim.test \
+	euptexdir/euptex-ucs.test euptexdir/euptex-widow.test
+euptexdir/euptriptest.log euptexdir/eptriptest.log: \
+	euptex$(EXEEXT) dvitype$(EXEEXT) pltotf$(EXEEXT) tftopl$(EXEEXT)
+euptexdir/pdfprimitive.log: euptex$(EXEEXT)
+euptexdir/eupver.log euptexdir/upkcat.log \
+	euptexdir/wcfname.log euptexdir/wcfname0.log \
+	euptexdir/euptex-ctrlsym.log euptexdir/euptex-prntknj.log \
+	euptexdir/euptex-kinsoku.log \
+	euptexdir/euptex-ofm.log euptexdir/euptex-prim.log \
+	euptexdir/euptex-ucs.log euptexdir/euptex-widow.log: euptex$(EXEEXT)
+
+# Although not all the euptex tests depend on these files, several do,
+# and there's no harm in ensuring they are built first. The individual
+# tests also try to build them, but since the names are the same among
+# the tests, that's subject to the usual parallel build race condition.
+# So make them a dependency here.
+# 
+$(euptex_tests): eup-basic.fmt
+#
+eup-basic.fmt: eup-basic.tex
+	TEXMFCNF=$(srcdir)/../kpathsea TEXINPUTS=$(srcdir)/tests: \
+	  ./euptex -ini -etex eup-basic.tex
+	test -s eup-basic.fmt # just in case tex succeeded but no .fmt
+#
+eup-basic.tex: $(srcdir)/tests/dump-basic.tex
+	cp $(srcdir)/tests/dump-basic.tex ./eup-basic.tex
+
+EXTRA_DIST += $(euptex_tests)
+
+if EUPTEX
+TESTS += $(euptex_tests)
+TRIPTRAP += euptrip.diffs
+TRIPTRAP_CLEAN += euptrip-clean
+endif EUPTEX
+
+## Test data and results
+##
+## euptexdir/euptriptest.test
+EXTRA_DIST += \
+	euptexdir/eptrip/eptrip.log \
+	euptexdir/eptrip/eptrip.tex \
+	euptexdir/euptrip/euptrip.diffs \
+	euptexdir/euptrip/texmf.cnf
+DISTCLEANFILES += euptrip.diffs
+EXTRA_DIST += \
+	euptexdir/pdfprimitive.test \
+	euptexdir/tests/pdfprimitive-test.tex \
+	euptexdir/tests/pdfprimitive-euptex.log
+DISTCLEANFILES += pdfprimitive-euptex.*
+
+## euptexdir/euptex-ctrlsym.test
+EXTRA_DIST += euptexdir/tests/ctrlsym.tex euptexdir/tests/ctrlsym-e.log \
+	euptexdir/tests/ctrlsym-u.log \
+	euptexdir/tests/endlinechar.tex euptexdir/tests/endline.log \
+	euptexdir/tests/control-symbol.tex euptexdir/tests/jctrlsym-e.log \
+	euptexdir/tests/jctrlsym-u.log \
+	euptexdir/tests/eup-endlinea.typ euptexdir/tests/eup-jctrlsyma-e.typ \
+	euptexdir/tests/eup-jctrlsyma-u.typ
+DISTCLEANFILES += eup-ctrlsym.log eup-ctrlsym.out eup-ctrlsym.tex \
+	eup-endline*.* eup-jctrlsym*.*
+## euptexdir/euptex-prntknj.test
+EXTRA_DIST += euptexdir/tests/printkanji.tex euptexdir/tests/pknj-s.log \
+	euptexdir/tests/pknj-e.log euptexdir/tests/pknj-u.log \
+	euptexdir/tests/eup-pknj-sa.typ euptexdir/tests/eup-pknj-ea.typ \
+	euptexdir/tests/eup-pknj-ua.typ
+DISTCLEANFILES += eup-pknj-*.*
+## euptexdir/euptex-kinsoku.test
+EXTRA_DIST += euptexdir/tests/postpena.tex euptexdir/tests/postpena.log \
+	euptexdir/tests/free_ixsp.tex euptexdir/tests/free_ixsp.log \
+	euptexdir/tests/free_pena.tex euptexdir/tests/free_pena.log \
+	euptexdir/tests/inhibitglue.tex euptexdir/tests/eup-inhibitgluea.typ \
+	euptexdir/tests/kinsoku-table.tex euptexdir/tests/kinsoku-table.log \
+	euptexdir/tests/kinsoku-search.tex euptexdir/tests/kinsoku-search.log
+DISTCLEANFILES += eup-postpena*.* eup-free_*.* eup-inhibitglue*.* eup-kinsoku*.*
+## euptexdir/euptex-ofm.test
+EXTRA_DIST += euptexdir/tests/eup-ofm.tex euptexdir/tests/eup-ofm.log
+DISTCLEANFILES += eup-ofm.*
+## euptexdir/euptex-prim.test
+EXTRA_DIST += euptexdir/tests/eup-prim.tex euptexdir/tests/eup-prim.log
+DISTCLEANFILES += eup-prim.*
+## euptexdir/euptex-ucs.test
+EXTRA_DIST += euptexdir/tests/ucs.tex euptexdir/tests/ucs-s.log \
+	euptexdir/tests/ucs-e.log euptexdir/tests/ucs-u.log
+DISTCLEANFILES += eup-ucs*.*
+## euptexdir/euptex-widow.test
+EXTRA_DIST += euptexdir/tests/eup-jchwidow-s.log \
+	euptexdir/tests/eup-jchwidow-e.log euptexdir/tests/eup-jchwidow.log
+DISTCLEANFILES += eup-jchwidow*.*
+
+euptrip.diffs: euptex$(EXEEXT) dvitype$(EXEEXT) pltotf$(EXEEXT) tftopl$(EXEEXT)
+	$(triptrap_diffs) $@
+.PHONY: euptrip-clean
+euptrip-clean:
+	rm -rf euptripdir
+
+# (end of euptex.am)

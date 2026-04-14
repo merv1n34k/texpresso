@@ -1,0 +1,379 @@
+## $Id: uptex.am 77096 2025-12-14 14:25:10Z takuji $
+## texk/web2c/uptexdir/am/uptex.am: Makefile fragment for upTeX.
+##
+## Copyright 2016-2025 Karl Berry <tex-live@tug.org>
+## Copyright 2011-2015 Peter Breitenlohner <tex-live@tug.org>
+## You may freely use, modify and/or distribute this file.
+
+uptex_cppflags = $(PTEXENC_INCLUDES) $(AM_CPPFLAGS) $(ZLIB_INCLUDES)
+uptex_ldadd = libukanji.a $(pproglib) $(PTEXENC_LIBS) $(LDADD) $(ZLIB_LIBS)
+uptex_dependencies = libukanji.a $(pproglib) $(PTEXENC_DEPEND) $(ZLIB_DEPEND) $(default_dependencies)
+up_tangle = $(tangle_silent)WEBINPUTS=.:$(srcdir)/uptexdir:$(srcdir) $(buildenv) $(TANGLE)
+
+upweb_programs = upbibtex updvitype uppltotf uptftopl
+
+
+## pTeX library
+##
+pproglib = lib/libp.a
+# Rebuild $(pproglib)
+$(pproglib): $(KPATHSEA_DEPEND) ${srcdir}/lib/*.c
+	cd lib && $(MAKE) $(AM_MAKEFLAGS) libp.a
+
+## libukanji.a for upTeX and e-upTeX
+##
+EXTRA_LIBRARIES += libukanji.a
+libukanji_a_SOURCES = uptexdir/kanji.c uptexdir/kanji.h uptexdir/kanji_dump.c
+libukanji_a_CPPFLAGS = $(uptex_cppflags)
+
+## upTeX
+##
+if UPTEX
+bin_PROGRAMS += uptex
+endif UPTEX
+if UPWEB
+bin_PROGRAMS += $(upweb_programs)
+endif UPWEB
+EXTRA_PROGRAMS += uptex $(upweb_programs)
+
+uptex_CPPFLAGS = $(uptex_cppflags)
+
+# With --enable-ipc, upTeX may need to link with -lsocket.
+uptex_LDADD = $(uptex_ldadd) $(ipc_socketlibs)
+uptex_DEPENDENCIES = $(uptex_dependencies)
+
+# upTeX C sources
+uptex_c_h = uptexini.c uptex0.c uptexcoerce.h uptexd.h
+nodist_uptex_SOURCES = $(uptex_c_h) uptex-pool.c
+dist_uptex_SOURCES = uptexdir/uptexextra.c uptexdir/uptexextra.h uptexdir/uptex_version.h
+
+# We must create uptexd.h and uptexdir/uptex_version.h before building the uptex_OBJECTS.
+uptex_prereq = uptexd.h uptexdir/ptex_version.h uptexdir/uptex_version.h
+$(uptex_OBJECTS): $(uptex_prereq)
+
+$(uptex_c_h): uptex-web2c
+	@$(web2c) uptex
+uptex-web2c: uptex.p $(web2c_texmf) uptexdir/uptex.defines
+	@$(web2c) uptex
+
+uptex-pool.c: uptex.pool uptexd.h $(makecpool_stamp)
+	$(makecpool) uptex >$@ || { rm -f $@; exit 1; }
+
+# Tangling upTeX
+uptex.p uptex.pool: uptex-tangle
+	$(texmf_tangle) uptex uptex
+uptex-tangle: tangle$(EXEEXT) uptex.web uptex.ch tangle-sh
+	$(texmf_tangle) uptex uptex
+
+# Extract uptex version
+$(srcdir)/uptexdir/uptex_version.h: @MAINTAINER_MODE_TRUE@ uptexdir/uptex-m.ch
+	$(AM_V_GEN)grep '^@d upTeX_version_string==' $(srcdir)/uptexdir/uptex-m.ch \
+	  | sed "s/^.*'-/#define UPTEX_VERSION \"/;s/'.*$$/\"/" >$@
+
+# Generate uptex.web
+uptex.web: tie$(EXEEXT) $(uptex_web_srcs)
+	$(tie_m) $(uptex_web_srcs)
+uptex_web_srcs = \
+	tex.web \
+	tex.ch \
+	tracingstacklevels.ch \
+	partoken.ch \
+	locnull-optimize.ch \
+	zlib-fmt.ch
+
+# Generate uptex.ch
+uptex.ch: tie$(EXEEXT) uptex.web $(uptex_ch_srcs)
+	$(tie_c) uptex.web $(uptex_ch_srcs)
+uptex_ch_srcs = \
+	uptexdir/ptex-base.ch \
+	uptexdir/uptex-m.ch \
+	$(uptex_ch_synctex) \
+	unbalanced-braces.ch \
+	tex-binpool.ch
+
+EXTRA_DIST += $(uptex_web_srcs) $(uptex_ch_srcs) uptexdir/uptex.defines
+
+DISTCLEANFILES += $(nodist_uptex_SOURCES) uptex.web uptex.ch uptex-web2c \
+	uptex.p uptex.pool uptex-tangle
+
+## upBibTeX
+##
+nodist_upbibtex_SOURCES = upbibtex.c upbibtex.h
+upbibtex_SOURCES = uptexdir/kanji.h
+upbibtex_CPPFLAGS = $(uptex_cppflags)
+upbibtex_LDADD = $(uptex_ldadd)
+upbibtex_DEPENDENCIES = $(uptex_dependencies)
+upbibtex.c upbibtex.h: upbibtex-web2c
+	@$(web2c) upbibtex
+upbibtex-web2c: upbibtex.p $(web2c_depend) uptexdir/uptex.defines web2c/cvtbib.sed
+	@$(web2c) upbibtex
+upbibtex.p: tangle$(EXEEXT) upbibtex.web uptexdir/upbibtex.ch
+	$(up_tangle) upbibtex upbibtex
+upbibtex.web: tie$(EXEEXT) bibtex.web bibtex.ch
+	$(tie_m) bibtex.web bibtex.ch
+EXTRA_DIST += uptexdir/upbibtex.ch
+if UPWEB
+bin_links += upbibtex$(EXEEXT):pbibtex
+endif # UPWEB
+
+## upDVItype
+##
+nodist_updvitype_SOURCES = updvitype.c updvitype.h
+updvitype_SOURCES = uptexdir/kanji.h
+updvitype_CPPFLAGS = $(uptex_cppflags) -DHEX_CHAR_CODE
+updvitype_LDADD = $(uptex_ldadd)
+updvitype_DEPENDENCIES = $(uptex_dependencies)
+updvitype.c updvitype.h: updvitype-web2c
+	@$(web2c) updvitype
+updvitype-web2c: updvitype.p $(web2c_depend) uptexdir/uptex.defines
+	@$(web2c) updvitype
+updvitype.p: tangle$(EXEEXT) updvitype.web uptexdir/updvitype.ch
+	$(up_tangle) updvitype updvitype
+updvitype.web: tie$(EXEEXT) dvitype.web dvitype.ch
+	$(tie_m) dvitype.web dvitype.ch
+EXTRA_DIST += uptexdir/updvitype.ch
+if UPWEB
+bin_links += updvitype$(EXEEXT):pdvitype
+endif # UPWEB
+
+## upPLtoTF
+##
+nodist_uppltotf_SOURCES = uppltotf.c uppltotf.h
+uppltotf_SOURCES = uptexdir/kanji.h
+uppltotf_CPPFLAGS = $(uptex_cppflags) -DPRESERVE_PUTC
+uppltotf_LDADD = $(uptex_ldadd)
+uppltotf_DEPENDENCIES = $(uptex_dependencies)
+uppltotf.c uppltotf.h: uppltotf-web2c
+	@$(web2c) uppltotf
+uppltotf-web2c: uppltotf.p $(web2c_depend) uptexdir/uptex.defines
+	@$(web2c) uppltotf
+uppltotf.p: tangle$(EXEEXT) uppltotf.web uptexdir/uppltotf.ch
+	$(up_tangle) uppltotf uppltotf
+uppltotf.web: tie$(EXEEXT) pltotf.web pltotf.ch
+	$(tie_m) pltotf.web pltotf.ch
+EXTRA_DIST += uptexdir/uppltotf.ch
+if UPWEB
+bin_links += uppltotf$(EXEEXT):ppltotf
+endif # UPWEB
+
+## upTFtoPL
+##
+nodist_uptftopl_SOURCES = uptftopl.c uptftopl.h
+uptftopl_SOURCES = uptexdir/kanji.h
+uptftopl_CPPFLAGS = $(uptex_cppflags)
+uptftopl_LDADD = $(uptex_ldadd)
+uptftopl_DEPENDENCIES = $(uptex_dependencies)
+uptftopl.c uptftopl.h: uptftopl-web2c
+	@$(web2c) uptftopl
+uptftopl-web2c: uptftopl.p $(web2c_depend) uptexdir/uptex.defines
+	@$(web2c) uptftopl
+uptftopl.p: tangle$(EXEEXT) uptftopl.web uptexdir/uptftopl.ch
+	$(up_tangle) uptftopl uptftopl
+uptftopl.web: tie$(EXEEXT) tftopl.web tftopl.ch
+	$(tie_m) tftopl.web tftopl.ch
+EXTRA_DIST += uptexdir/uptftopl.ch
+if UPWEB
+bin_links += uptftopl$(EXEEXT):ptftopl
+endif # UPWEB
+
+##
+EXTRA_DIST += \
+	uptexdir/COPYRIGHT \
+	uptexdir/COPYRIGHT.ja \
+	uptexdir/ChangeLog
+
+# emacs-page
+# upTeX Tests
+uptex_tests = \
+	uptexdir/uptriptest.test uptexdir/ptriptest.test \
+	uptexdir/upver.test \
+	uptexdir/upkcat.test \
+	uptexdir/wcfname.test uptexdir/wcfname0.test \
+	uptexdir/uptex-ctrlsym.test \
+	uptexdir/uptex-prntknj.test \
+	uptexdir/uptex-ofm.test uptexdir/uptex-prim.test \
+	uptexdir/uptex-lmr.test uptexdir/uptex-cat.test \
+	uptexdir/uptex-noto.test \
+	uptexdir/uptex-ucs.test uptexdir/uptex-widow.test
+uptexdir/uptriptest.log uptexdir/ptriptest.log: \
+	uptex$(EXEEXT) dvitype$(EXEEXT) pltotf$(EXEEXT) tftopl$(EXEEXT)
+uptexdir/upver.log uptexdir/upkcat.log \
+	uptexdir/wcfname.log uptexdir/wcfname0.log \
+	uptexdir/uptex-ctrlsym.log uptexdir/uptex-prntknj.log \
+	uptexdir/uptex-ofm.log uptexdir/uptex-prim.log \
+	uptexdir/uptex-lmr.log uptexdir/uptex-cat.log \
+	uptexdir/uptex-noto.log \
+	uptexdir/uptex-ucs.log uptexdir/uptex-widow.log: uptex$(EXEEXT)
+upweb_tests = \
+	uptexdir/upbibtex.test \
+	uptexdir/updvitype.test \
+	uptexdir/uppltotf.test \
+	uptexdir/uptftopl.test
+## upBibTeX
+upweb_tests += \
+	uptexdir/upbibtex-openout-test.pl uptexdir/upbibtex-longline-test.pl \
+	uptexdir/upbibtex-mem.test uptexdir/nissya.test \
+	uptexdir/unibib.test
+## upDviType
+upweb_tests += \
+	uptexdir/sample.test
+# uppPLtoTF/upTFtoPL
+upweb_tests += \
+	uptexdir/yokotate.test uptexdir/skipjfmp.test \
+	uptexdir/newjfm.test uptexdir/uparse.test \
+	uptexdir/gkhuge.test uptexdir/gk256.test
+uptexdir/upbibtex.log: upbibtex$(EXEEXT)
+uptexdir/updvitype.log: updvitype$(EXEEXT)
+uptexdir/uppltotf.log: uppltotf$(EXEEXT)
+uptexdir/uptftopl.log: uptftopl$(EXEEXT)
+uptexdir/upbibtex-openout-test.log uptexdir/upbibtex-longline-test.log \
+	uptexdir/upbibtex-mem.log uptexdir/nissya.log \
+	uptexdir/unibib.log: upbibtex$(EXEEXT)
+uptexdir/sample.log: updvitype$(EXEEXT)
+uptexdir/yokotate.log uptexdir/skipjfmp.log \
+	uptexdir/newjfm.log uptexdir/uparse.log \
+	uptexdir/gkhuge.log uptexdir/gk256.log: uppltotf$(EXEEXT) uptftopl$(EXEEXT)
+
+# See comments in euptex.am, except we have to build multiple test fmts here.
+$(uptex_tests): up-basic.fmt up-basic-euc.fmt up-basic-sjis.fmt
+#
+# Must find some files in $(srcdir) to build the test fmts.
+uptex_ini = TEXMFCNF=$(srcdir)/../kpathsea TEXINPUTS=$(srcdir)/tests: ./uptex -ini
+#
+up-basic.fmt: up-basic.tex
+	$(uptex_ini) -kanji-internal=uptex -jobname=up-basic      up-basic
+	test -s up-basic.fmt
+up-basic-euc.fmt: up-basic.tex
+	$(uptex_ini) -kanji-internal=euc   -jobname=up-basic-euc  up-basic
+	test -s up-basic-euc.fmt
+up-basic-sjis.fmt: up-basic.tex
+	$(uptex_ini) -kanji-internal=sjis  -jobname=up-basic-sjis up-basic
+	test -s up-basic-sjis.fmt
+#
+up-basic.tex: $(srcdir)/tests/dump-basic.tex
+	cp $(srcdir)/tests/dump-basic.tex ./up-basic.tex
+
+EXTRA_DIST += $(uptex_tests) $(upweb_tests)
+DISTCLEANFILES += $(upweb_programs:=.c) $(upweb_programs:=.h) \
+	$(upweb_programs:=.p) $(upweb_programs:=-web2c) $(upweb_programs:=.web)
+
+if UPTEX
+TESTS += $(uptex_tests)
+TRIPTRAP += uptrip.diffs
+TRIPTRAP_CLEAN += uptrip-clean
+endif UPTEX
+if UPWEB
+TESTS += $(upweb_tests)
+endif UPWEB
+
+## Test data and results
+##
+## uptexdir/nissya.test
+EXTRA_DIST += uptexdir/tests/nissya.bst uptexdir/tests/sample.bib \
+	uptexdir/tests/nissya_bib.aux uptexdir/tests/nissya_bib.bbl
+DISTCLEANFILES += uptests/nissya_bib.*
+## uptexdir/upbibtex.test
+EXTRA_DIST += tests/enc-u.bbl tests/enc-eu.bbl tests/enc-su.bbl tests/enc-uu.bbl
+DISTCLEANFILES += uptests/xexampl.aux uptests/xexampl.bbl uptests/xexampl.blg \
+	uptests/xenc*.* uptests/fn*.*
+## uptexdir/upbibtex-mem.test
+DISTCLEANFILES += uptests/memtest.bib uptests/memtest?.*
+## uptexdir/updvitype.test
+EXTRA_DIST += uptexdir/tests/ptex3.tex uptexdir/tests/ptex3.dvi \
+	uptexdir/tests/ptex4.tex uptexdir/tests/ptex4.dvi \
+	uptexdir/tests/ptex3a-jis.typ uptexdir/tests/ptex3a-utf8.typ \
+	uptexdir/tests/ptex4a-jis.typ uptexdir/tests/ptex4a-utf8.typ
+EXTRA_DIST += uptexdir/tests/uptex3.tex uptexdir/tests/uptex3.dvi \
+	uptexdir/tests/uptex4.tex uptexdir/tests/uptex4.dvi \
+	uptexdir/tests/uptex5.tex uptexdir/tests/uptex5.dvi \
+	uptexdir/tests/uptex3a.typ uptexdir/tests/uptex4a.typ \
+	uptexdir/tests/uptex5a.typ
+DISTCLEANFILES += uptests/xstory.dvityp uptests/xpagenum.typ uptests/x*ptex[345]*.typ
+## uptexdir/uppltotf.test
+DISTCLEANFILES += uptests/xcmr10.tfm
+## uptexdir/uptftopl.test
+DISTCLEANFILES += uptests/xcmr10.pl
+## uptexdir/sample.test
+EXTRA_DIST += uptexdir/tests/goth10.tfm uptexdir/tests/sample.dvi uptexdir/tests/samplea.typ
+DISTCLEANFILES += uptests/xsample*.typ
+## uptexdir/yokotate.test
+EXTRA_DIST += uptexdir/tests/min10.pl uptexdir/tests/min10.tfm
+EXTRA_DIST += uptexdir/tests/tmin10.pl uptexdir/tests/tmin10.tfm
+EXTRA_DIST += uptexdir/tests/chcode.pl uptexdir/tests/chcode-jis.pl uptexdir/tests/chcode.tfm \
+	ptexdir/tests/chcode-utf8.pl uptexdir/tests/chcode-euc.pl uptexdir/tests/chcode-sjis.pl
+EXTRA_DIST += uptexdir/tests/umin10.pl uptexdir/tests/umin10.tfm
+EXTRA_DIST += uptexdir/tests/utmin10.pl uptexdir/tests/utmin10.tfm
+DISTCLEANFILES += uptests/x*min10.* uptests/xchcode*.*
+## uptexdir/newjfm.test
+EXTRA_DIST += uptexdir/tests/testnewu.pl uptexdir/tests/testnewu.tfm \
+	uptexdir/tests/testnewu8.pl uptexdir/tests/testnewu8.tfm
+DISTCLEANFILES += uptests/xtestnewu*.*
+## uptexdir/uparse.test
+EXTRA_DIST += uptexdir/tests/uparse.pl uptexdir/tests/uparse.tfm
+DISTCLEANFILES += uptests/xuparse.* uptests/yuparse.*
+## uptexdir/gkhuge.test
+EXTRA_DIST += uptexdir/tests/gkhugeok.tfm uptexdir/tests/gkhugeng.tfm uptexdir/tests/gkhugeng.err
+DISTCLEANFILES += uptests/ygkhuge*.*
+## uptexdir/gk256.test
+EXTRA_DIST += uptexdir/tests/gk256g.tfm uptexdir/tests/gk256k.tfm
+DISTCLEANFILES += uptests/ygk256*.*
+## uptexdir/skipjfmp.test
+EXTRA_DIST += uptexdir/tests/skipjfmp.pl uptexdir/tests/skipjfmp.tfm uptexdir/tests/skipjfmp.tex
+DISTCLEANFILES += uptests/xskipjfmp.*
+## uptexdir/uptriptest
+EXTRA_DIST += uptexdir/uptrip/uptrip.diffs uptexdir/uptrip/texmf.cnf
+DISTCLEANFILES += uptrip.diffs
+## uptexdir/upver.test
+EXTRA_DIST += uptexdir/tests/pver1.tex uptexdir/tests/pver2.tex
+
+## uptexdir/uptex-ctrlsym.test
+EXTRA_DIST += uptexdir/tests/ctrlsym.tex uptexdir/tests/ctrlsym-e.log \
+	uptexdir/tests/ctrlsym-u.log \
+	uptexdir/tests/endlinechar.tex uptexdir/tests/endline.log \
+	uptexdir/tests/control-symbol.tex uptexdir/tests/jctrlsym-e.log \
+	uptexdir/tests/jctrlsym-u.log \
+	uptexdir/tests/up-endlinea.typ uptexdir/tests/up-jctrlsyma-e.typ \
+	uptexdir/tests/up-jctrlsyma-u.typ \
+	uptexdir/tests/let_char_token.tex uptexdir/tests/chartoken.log \
+	uptexdir/tests/ptexlineendmode.tex uptexdir/tests/up-lineenda.typ
+DISTCLEANFILES += up-ctrlsym.log up-ctrlsym.out up-ctrlsym.tex \
+	up-endline*.* up-jctrlsym*.* up-chartoken.* up-lineend.*
+## uptexdir/uptex-prntknj.test
+EXTRA_DIST += uptexdir/tests/printkanji.tex uptexdir/tests/pknj-s.log \
+	uptexdir/tests/pknj-e.log uptexdir/tests/pknj-u.log \
+	uptexdir/tests/up-pknj-sa.typ uptexdir/tests/up-pknj-ea.typ \
+	uptexdir/tests/up-pknj-ua.typ
+DISTCLEANFILES += up-pknj-*.*
+## uptexdir/uptex-ofm.test
+EXTRA_DIST += uptexdir/tests/up-ofm.tex uptexdir/tests/up-ofm.log \
+	uptexdir/tests/up-ofma.typ
+DISTCLEANFILES += up-ofm.*
+## uptexdir/uptex-prim.test
+EXTRA_DIST += uptexdir/tests/up-prim.tex uptexdir/tests/up-prim.log
+DISTCLEANFILES += up-prim.*
+## uptexdir/uptex-lmr.test
+EXTRA_DIST += uptexdir/tests/lmr1.tex uptexdir/tests/up-lmr1.log \
+	uptexdir/tests/lmr2.tex uptexdir/tests/up-lmr2.log
+DISTCLEANFILES += up-lmr*.*
+## uptexdir/uptex-cat.test
+EXTRA_DIST += uptexdir/tests/catcd.tex uptexdir/tests/up-cat.log
+DISTCLEANFILES += up-cat.*
+## uptexdir/uptex-noto.test
+EXTRA_DIST += uptexdir/tests/noto1.tex uptexdir/tests/up-noto1.log
+DISTCLEANFILES += up-noto*.*
+## uptexdir/uptex-ucs.test
+EXTRA_DIST += uptexdir/tests/ucs.tex uptexdir/tests/ucs-s.log \
+	uptexdir/tests/ucs-e.log uptexdir/tests/ucs-u.log
+DISTCLEANFILES += up-ucs*.*
+## uptexdir/uptex-widow.test
+EXTRA_DIST += uptexdir/tests/jchwidow.tex uptexdir/tests/up-jchwidow-s.log \
+	uptexdir/tests/up-jchwidow-e.log uptexdir/tests/up-jchwidow.log
+DISTCLEANFILES += up-jchwidow*.*
+
+uptrip.diffs: uptex$(EXEEXT) dvitype$(EXEEXT) pltotf$(EXEEXT) tftopl$(EXEEXT)
+	$(triptrap_diffs) $@
+.PHONY: uptrip-clean
+uptrip-clean:
+	rm -rf uptripdir
+
+# (end of uptex.am)

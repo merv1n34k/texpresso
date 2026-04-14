@@ -1,0 +1,99 @@
+.TH ETEX 1 "15 January 2026" "Web2C @VERSION@"
+.\"=====================================================================
+.if t .ds TX \fRT\\h'-0.10m'\\v'0.17v'E\\v'-0.17v'\\h'-0.06m'X\fP
+.if n .ds TX TeX
+.el .ds OX TeX
+.\" LX definition must follow TX so LX can use TX
+.if t .ds LX \fRL\\h'-0.36m'\\v'-0.15v'\s-2A\s0\\h'-0.15m'\\v'0.15v'\fP\*(TX
+.if n .ds LX LaTeX
+.\"=====================================================================
+.SH NAME
+etex \- extended (plain) TeX
+.SH SYNOPSIS
+.B etex
+.RI [ options ]
+.RI [ \fB&\fPformat ]
+\h'.25' [ \fIfile\fP [ \fImore-input\fP ] \h'.5'|\h'.5' [ \fB\e\fP\fImore-input\fP ]
+.\"=====================================================================
+.SH DESCRIPTION
+Run the e-\*(TX typesetter on
+.IR file ,
+usually creating
+.IR file.dvi .
+If the file argument has no extension, ".tex" will be appended to it. See
+.BR tex (1)
+for details of command-line parsing.
+.PP
+The e-\*(TX extensions include both macro programming and typesetting
+features. They are described in the e-\*(TX manual, included in
+distributions and linked from the CTAN package page:
+https://ctan.org/pkg/etex.
+.PP
+When a format (\fI.fmt\fP) file is created, the e-\*(TX extensions are
+enabled by prefixing the source filename with an asterisk (*), as in
+"etex *etex.ini". The standard \fIfmtutil.cnf\fP in \*(TX Live sets this
+up for all relevant formats, not included original \*(TX.
+.PP
+If extended mode is not enabled, e-\*(TX operates in a so-called
+.I compatibility mode
+with all extensions disabled; this is intended to be indistinguishable
+from standard \*(TX.
+.PP
+As of version 1.40 (around 2007), pdf\*(TX incorporated the e-\*(TX
+extensions (along with its own extensions), and the \fBetex\fP
+executable became a symlink to \fBpdftex\fP. The e-\*(TX and some of the
+pdf\*(TX extensions have been required by \*(LX since about 2020.
+.\"=====================================================================
+.SH OPTIONS
+See
+.BR pdftex (1).
+.\"=====================================================================
+.SH ENVIRONMENT
+See
+.BR tex (1).
+.\"=====================================================================
+.SH BUGS
+See
+.BR tex (1).
+.\"=====================================================================
+.SH FILES
+See
+.BR tex (1).
+Also:
+.TP
+.I $TEXMFMAIN/tex/plain/config/etex.ini
+The driver file that builds the e-\*(TX format file, \fIetex.fmt\fP, in
+\*(TX Live; the engine used is pdf\*(TX (in dvi mode).
+.TP
+.I $TEXMFMAIN/tex/plain/etex/etex.src
+.br
+The main \*(TX source for the e-\*(TX format.
+.TP
+.I $TEXMFMAIN/tex/plain/etex/etex.src
+A small variant of etex.src needed for the Lua\*(TX-based formats.
+.TP
+.I $TEXMFMAIN/tex/plain/etex/etexdefs.lib
+Additional definitions for the e-\*(TX format.
+.\"=====================================================================
+.SH "SEE ALSO"
+.BR pdftex (1),
+.BR tex (1).
+.PP
+e-\*(TX package page on CTAN: https://ctan.org/pkg/etex
+.br
+e-\*(TX manual: https://mirror.ctan.org/systems/doc/etex/etex_man.pdf
+.br
+Web2c manual: https://tug.org/web2c
+.br
+Kpathsea manual: https://tug.org/kpathsea
+.\"=====================================================================
+.SH AUTHORS
+\*(TX was created by Donald E. Knuth. e-\*(TX was a result of the NTS
+Project, established under the aegis of DANTE e.V. (https://dante.de) in
+1992. NTS also released an independent implementation of \*(TX, in Java,
+was released in 2001: https://ctan.org/pkg/nts
+.PP
+e-\*(TX was developed by Peter Breitenlohner and the NTS team; Peter
+later continued its development outside of the team.
+.PP
+Public discussion list and bug reports: https://lists.tug.org/tex-k

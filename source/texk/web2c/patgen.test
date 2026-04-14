@@ -1,0 +1,15 @@
+#! /bin/sh -vx
+# $Id: patgen.test 68157 2023-09-03 11:26:37Z takuji $
+# Copyright 2017 Karl Berry <tex-live@tug.org>
+# Copyright 2009 Peter Breitenlohner <tex-live@tug.org>
+# You may freely use, modify and/or distribute this file.
+
+BinDir=${BinDir:-.}
+ExeExt=${ExeExt:-}
+_patgen=$BinDir/patgen$ExeExt
+
+test -d tests || mkdir -p tests
+
+$_patgen $srcdir/tests/dict $srcdir/tests/patterns tests/xpatout \
+  $srcdir/tests/translate <$srcdir/tests/patgen.in || exit 1
+

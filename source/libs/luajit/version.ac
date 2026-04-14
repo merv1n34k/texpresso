@@ -1,0 +1,14 @@
+dnl
+dnl   Copyright (C) 2014, 2015 Peter Breitenlohner <tex-live@tug.org>
+dnl
+dnl   This file is free software; the copyright holder
+dnl   gives unlimited permission to copy and/or distribute it,
+dnl   with or without modifications, as long as this notice is preserved.
+dnl
+dnl --------------------------------------------------------
+dnl
+dnl  m4-include this file to define the current luajit version
+dnl m4_define([luajit_version], [2.1.1736781742])
+dnl libtool:   error: REVISION '1736781742' must be a nonnegative integer
+dnl libtool:   error: '3:1736781742:1' is not valid version information
+m4_define([luajit_version], [2.1.81742])

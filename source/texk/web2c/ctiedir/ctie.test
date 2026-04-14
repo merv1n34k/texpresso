@@ -1,0 +1,24 @@
+#! /bin/sh -vx
+# $Id: ctie.test 68157 2023-09-03 11:26:37Z takuji $
+# Copyright 2017 Karl Berry <tex-live@tug.org>
+# Copyright 2009 Peter Breitenlohner <tex-live@tug.org>
+# You may freely use, modify and/or distribute this file.
+
+BinDir=${BinDir:-.}
+ExeExt=${ExeExt:-}
+_ctie=$BinDir/ctie$ExeExt
+
+TEXMFCNF=$srcdir/../kpathsea \
+  CWEBINPUTS=$srcdir/ctiedir \
+  $_ctie -c ctie.outc ctie.tie ctie.cf1 ctie.cf2 ctie.cf3 || exit 1
+
+
+diff ctie.outc $srcdir/ctiedir/ctie.chf.gen || exit 2
+
+TEXMFCNF=$srcdir/../kpathsea \
+  CWEBINPUTS=$srcdir/ctiedir \
+  $_ctie -m ctie.outm ctie.tie ctie.cf1 ctie.cf2 ctie.cf3 || exit 3
+
+
+diff ctie.outm $srcdir/ctiedir/ctie.master.gen || exit 4
+

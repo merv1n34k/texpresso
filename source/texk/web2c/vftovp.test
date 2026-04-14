@@ -1,0 +1,38 @@
+#! /bin/sh -vx
+# $Id: vftovp.test 68157 2023-09-03 11:26:37Z takuji $
+# Copyright 2017 Karl Berry <tex-live@tug.org>
+# Copyright 2009-2015 Peter Breitenlohner <tex-live@tug.org>
+# You may freely use, modify and/or distribute this file.
+
+BinDir=${BinDir:-.}
+ExeExt=${ExeExt:-}
+_vftovp=$BinDir/vftovp$ExeExt
+
+test -d tests || mkdir -p tests
+
+# pre-generated test results in the repository are stored in LF
+# but the output might be written in CRLF on some platform.
+# if 'diff --strip-trailing-cr' is available, exploit it.
+# (useful for tests on win32 binaries run on MSYS shell)
+DIFF="diff"
+$DIFF --strip-trailing-cr $0 $0 \
+  && DIFF="diff --strip-trailing-cr" || echo
+
+$_vftovp -char=bar -help  || exit 1
+
+$_vftovp -version  || exit 2
+
+TEXMFCNF=$srcdir/../kpathsea
+TFMFONTS=$srcdir/tests
+export TEXMFCNF TFMFONTS
+
+$_vftovp -verbose  $srcdir/tests/badvf && exit 3
+
+$_vftovp -verbose $srcdir/tests/ptmr ptmr tests/xptmra || exit 4
+
+diff $srcdir/tests/ptmr.vpl tests/xptmra.vpl || exit 5
+
+$_vftovp -verbose $srcdir/tests/ptmr ptmr >tests/xptmrb.vpl || exit 6
+
+$DIFF $srcdir/tests/ptmr.vpl tests/xptmrb.vpl || exit 7
+

@@ -1,0 +1,18 @@
+Changes applied to the harfbuzz-14.1.0/ tree as obtained from:
+	https://github.com/harfbuzz/harfbuzz/releases/tag/14.1.0/
+
+Removed:
+	.clang-format
+	.codecov.yml
+	.editorconfig
+	src/hb-version.h
+	src/hb-features.h.in
+
+        unused dirs:
+	.ci
+	.github
+	docs
+	perf
+	subprojects
+	test
+	util
