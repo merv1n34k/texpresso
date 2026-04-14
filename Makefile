@@ -76,6 +76,9 @@ endif
 texpresso-xetex:
 	$(MAKE) -C src/engine
 
+texpresso-luatex:
+	$(MAKE) -C src/engine-lua
+
 compile_commands.json:
 	bear -- $(MAKE) -B -k all
 
@@ -118,4 +121,4 @@ test-lookup-file:
 test-register:
 	timeout $(TEST_TIMEOUT) bash test/test-register.sh
 
-.PHONY: all dev clean config texpresso common texpresso-xetex re2c compile_commands.json fill-tectonic-cache test-texlive test-tectonic test-texpresso test-stream test-stream-pipe test-open-base64 test-lookup-file test-register
+.PHONY: all dev clean config texpresso common texpresso-xetex texpresso-luatex re2c compile_commands.json fill-tectonic-cache test-texlive test-tectonic test-texpresso test-stream test-stream-pipe test-open-base64 test-lookup-file test-register
