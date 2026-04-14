@@ -1,0 +1,11 @@
+diff -ur zziplib-0.13.72.orig/zzip/lib.h zziplib-0.13.72/zzip/lib.h
+--- zziplib-0.13.72.orig/zzip/lib.h	2021-01-05 08:05:08.000000000 +0900
++++ zziplib-0.13.72/zzip/lib.h	2022-09-10 21:41:22.000000000 +0900
+@@ -16,6 +16,7 @@
+ #include <zzip/zzip.h>
+ #include <zzip/plugin.h>
+ #include <zzip/stdint.h>
++#include <zzip/zzip32.h>
+ 
+ #ifdef __cplusplus
+ extern "C" {

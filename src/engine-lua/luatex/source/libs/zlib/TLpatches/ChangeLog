@@ -1,0 +1,46 @@
+2026-02-18  Norbert Preining  <norbert@preining.info>
+
+	Add a patch to minigzip to not use caddr.
+
+2026-02-18  Akira Kakuto  <kakuto@jcom.zaq.ne.jp>
+
+	Import zlib-1.3.2.
+
+2024-01-30  Akira Kakuto  <kakuto@jcom.zaq.ne.jp>
+
+	Import zlib-1.3.1.
+
+2023-08-26  Akira Kakuto  <kakuto@jcom.zaq.ne.jp>
+
+	Import zlib-1.3.0.
+
+2022-10-15  Akira Kakuto  <kakuto@jcom.zaq.ne.jp>
+
+	Import zlib-1.2.13.
+
+2022-04-05  Akira Kakuto  <kakuto@jcom.zaq.ne.jp>
+
+	Import zlib-1.2.12.
+	* Remove patch-01-not-define-WIDECHAR-for-cygwin
+
+2017-01-15  Akira Kakuto  <kakuto@fuk.kindai.ac.jp>
+
+	Import zlib-1.2.11.
+	* Add patch-01-not-define-WIDECHAR-for-cygwin: Adapted.
+
+2017-01-03  Akira Kakuto  <kakuto@fuk.kindai.ac.jp>
+
+	Import zlib-1.2.10.
+
+2012-02-11  Peter Breitenlohner  <peb@mppmu.mpg.de>
+
+	Import zlib-1.2.6.
+	* patch-01-LARGEFILE64_SOURCE: Removed.
+
+2010-09-27  Peter Breitenlohner  <peb@mppmu.mpg.de>
+
+	Create patch-01-LARGEFILE64_SOURCE:
+	* zlib-1.2.5/zlib.h: Use #ifndef _LARGEFILE64_SOURCE instead
+	of #ifdef _LARGEFILE64_SOURCE, to allow compilation with
+	_LARGEFILE64_SOURCE.
+
