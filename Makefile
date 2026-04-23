@@ -74,10 +74,10 @@ config:
 endif
 
 texpresso-xetex:
-	$(MAKE) -C src/engine
+	$(MAKE) -C src/engine-xetex
 
 texpresso-luatex:
-	$(MAKE) -C src/engine-lua
+	$(MAKE) -C src/engine-luatex
 
 compile_commands.json:
 	bear -- $(MAKE) -B -k all
