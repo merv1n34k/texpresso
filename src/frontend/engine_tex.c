@@ -66,6 +66,7 @@ struct tex_engine
   char *engine_path;
   char *inclusion_path;
   bool use_texlive;
+  bool use_luatex;
   bool stream_mode;
 
   filesystem_t *fs;

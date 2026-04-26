@@ -75,7 +75,7 @@ static void set_more_recent(uint64_t *time, char **result, char *candidate)
     *result = candidate;
 }
 
-static void find_engine(char engine_path[4096], const char *exec_path)
+static void find_engine(char engine_path[4096], const char *exec_path, const char *engine_name)
 {
   strcpy(engine_path, exec_path);
   char *basename = NULL;
@@ -85,9 +85,9 @@ static void find_engine(char engine_path[4096], const char *exec_path)
   uint64_t time = 0;
   if (basename)
   {
-    strcpy(basename, "texpresso-xetex");
+    strcpy(basename, engine_name);
     if (!is_more_recent(&time, engine_path))
-      strcpy(engine_path, "texpresso-xetex");
+      strcpy(engine_path, engine_name);
   }
 }
 
@@ -1140,7 +1140,8 @@ bool texpresso_main(struct persistent_state *ps)
       doc_ext = ptr + 1;
 
   char engine_path[4096];
-  find_engine(engine_path, ps->exe_path);
+  const char *engine_name = ps->use_luatex ? "texpresso-luatex" : "texpresso-xetex";
+  find_engine(engine_path, ps->exe_path, engine_name);
   fprintf(stderr, "[info] engine path: %s\n", engine_path);
 
   if (doc_ext && strcmp(doc_ext, "pdf") == 0)

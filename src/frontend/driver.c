@@ -106,7 +106,7 @@ static void usage(void)
 {
   fprintf(stderr,
           "Usage: texpresso [-I path]* [-json] [-lines] [-texlive] [-tectonic] "
-          "[-test-initialize] [-stream] root_file.tex\n");
+          "[-xetex] [-luatex] [-test-initialize] [-stream] root_file.tex\n");
   fprintf(stderr,
           " -I path    Add a path to included directories. \n"
           "    Files are looked up relative to document directory and all "
@@ -121,6 +121,10 @@ static void usage(void)
   fprintf(stderr,
           " -tectonic  Load TeX packages from tectonic installation (using "
           "tectonic command)\n");
+  fprintf(stderr,
+          " -xetex     Use XeTeX engine (default)\n");
+  fprintf(stderr,
+          " -luatex    Use LuaTeX engine\n");
   fprintf(stderr,
           " -test-initialize  Run a single cycle for test purposes\n");
   fprintf(stderr,
@@ -153,6 +157,7 @@ int main(int argc, const char **argv)
   bool line_output = 0;
   bool use_tectonic = 0;
   bool use_texlive = 0;
+  bool use_luatex = 0;
   bool initialize_only = 0;
   bool stream_mode = 0;
 
@@ -189,6 +194,14 @@ int main(int argc, const char **argv)
       else if (strcmp(arg, "-texlive") == 0)
       {
         use_texlive = 1;
+      }
+      else if (strcmp(arg, "-luatex") == 0)
+      {
+        use_luatex = 1;
+      }
+      else if (strcmp(arg, "-xetex") == 0)
+      {
+        // explicit xetex selection (default)
       }
       else if (strcmp(arg, "-test-initialize") == 0)
       {
@@ -338,6 +351,7 @@ int main(int argc, const char **argv)
       .line_output = line_output,
       .use_tectonic = use_tectonic,
       .use_texlive = use_texlive,
+      .use_luatex = use_luatex,
       .initialize_only = initialize_only,
       .stream_mode = stream_mode
   };
