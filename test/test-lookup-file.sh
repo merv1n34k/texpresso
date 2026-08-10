@@ -26,7 +26,7 @@ trap cleanup EXIT
 
 TARGET="texpresso_ci_missing_file.tex"
 
-SDL_VIDEODRIVER=dummy build/texpresso -test-initialize test/missing-input.tex \
+TEXPRESSO_TRACE_LOOKUP=1 SDL_VIDEODRIVER=dummy build/texpresso -test-initialize test/missing-input.tex \
   < "$CMD" > "$OUTPIPE" 2>"$ERRFILE" &
 PID=$!
 
@@ -71,7 +71,8 @@ if ! grep -q "Output written on" "$OUTFILE"; then
   echo "--- last 30 lines of engine output ---"
   tail -30 "$OUTFILE"
   echo "--- engine stderr ---"
-  grep -aE "wasm\]|error|Error" "$ERRFILE" | tail -15
+  grep -acE "DBG" "$ERRFILE" | sed "s/^/lookup probes traced: /"
+  grep -aE "wasm\]|DBG" "$ERRFILE"
   exit 1
 fi
 

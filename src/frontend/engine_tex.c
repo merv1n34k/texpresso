@@ -171,6 +171,9 @@ static int wio_openat(void *vctx, int dirfd, const char *path, int flags,
   int write = (flags & (O_WRONLY | O_RDWR | O_CREAT)) != 0;
 
   fileentry_t *e = filesystem_lookup_or_create(ctx, self->fs, path);
+  if (getenv("TEXPRESSO_TRACE_LOOKUP") && strstr(path, "texpresso_ci"))
+    fprintf(stderr, "[DBGopen] '%s' e=%p data=%p write=%d\n", path, (void *)e,
+            (void *)entry_data(e), write);
   log_fileentry(ctx, self->log, e);
 
   if (!write)
@@ -449,6 +452,9 @@ static int wio_statat(void *vctx, int dirfd, const char *path, struct stat *s,
   struct wasm_engine *self = vctx;
   (void)dirfd; (void)atflags;
   fileentry_t *e = filesystem_lookup(self->fs, path);
+  if (getenv("TEXPRESSO_TRACE_LOOKUP") && strstr(path, "texpresso_ci"))
+    fprintf(stderr, "[DBGstat] '%s' e=%p data=%p\n", path, (void *)e,
+            e ? (void *)entry_data(e) : NULL);
   if (e && entry_data(e)) { fill_estat(e, s); return 0; }
   int r = stat(path, s); /* existence probe hits disk (read-only) */
   if (r < 0 && defer_if_promised(self, path)) { fill_estat(e ? e : filesystem_lookup(self->fs, path), s); return 0; }
@@ -462,6 +468,9 @@ static int wio_accessat(void *vctx, int dirfd, const char *path, int amode,
   struct wasm_engine *self = vctx;
   (void)dirfd; (void)atflags;
   fileentry_t *e = filesystem_lookup(self->fs, path);
+  if (getenv("TEXPRESSO_TRACE_LOOKUP") && strstr(path, "texpresso_ci"))
+    fprintf(stderr, "[DBGaccess] '%s' e=%p data=%p\n", path, (void *)e,
+            e ? (void *)entry_data(e) : NULL);
   if (e && entry_data(e)) return 0;
   int r = access(path, amode);
   if (r < 0 && defer_if_promised(self, path)) return 0;
