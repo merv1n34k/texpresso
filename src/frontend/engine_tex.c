@@ -520,7 +520,13 @@ static void run_to_end(fz_context *ctx, struct wasm_engine *self)
 {
   while (wasm_engine_run())
   {
-    if (self->deferred) { self->suspended = true; return; }
+    if (self->deferred)
+    {
+      self->suspended = true;
+      fprintf(stderr, "[wasm] parked: waiting for '%s'\n",
+              self->deferred->path ? self->deferred->path : "?");
+      return;
+    }
     if (self->want_ckpt)
     {
       self->want_ckpt = false;

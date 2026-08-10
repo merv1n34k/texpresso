@@ -14,10 +14,11 @@ WATCHDOG_TIMEOUT=${WATCHDOG_TIMEOUT:-60}
 CMD=$(mktemp -u /tmp/texpresso-cmd-XXXXXX)
 OUTPIPE=$(mktemp -u /tmp/texpresso-outpipe-XXXXXX)
 OUTFILE=$(mktemp /tmp/texpresso-out-XXXXXX)
+ERRFILE=$(mktemp /tmp/texpresso-err-XXXXXX)
 mkfifo "$CMD" "$OUTPIPE"
 
 cleanup() {
-  rm -f "$CMD" "$OUTPIPE" "$OUTFILE"
+  rm -f "$CMD" "$OUTPIPE" "$OUTFILE" "$ERRFILE"
   kill "$PID" 2>/dev/null || true
   kill "$WATCHER" 2>/dev/null || true
 }
@@ -26,7 +27,7 @@ trap cleanup EXIT
 TARGET="texpresso_ci_missing_file.tex"
 
 SDL_VIDEODRIVER=dummy build/texpresso -test-initialize test/missing-input.tex \
-  < "$CMD" > "$OUTPIPE" 2>/dev/null &
+  < "$CMD" > "$OUTPIPE" 2>"$ERRFILE" &
 PID=$!
 
 # Safety net only: the loop below ends on its own when the engine exits.
@@ -67,8 +68,10 @@ fi
 # actually used and the document typeset.
 if ! grep -q "Output written on" "$OUTFILE"; then
   echo "FAIL: no output produced after supplying $TARGET"
-  echo "--- last 40 lines of engine output ---"
-  tail -40 "$OUTFILE"
+  echo "--- last 30 lines of engine output ---"
+  tail -30 "$OUTFILE"
+  echo "--- engine stderr ---"
+  grep -aE "wasm\]|error|Error" "$ERRFILE" | tail -15
   exit 1
 fi
 
