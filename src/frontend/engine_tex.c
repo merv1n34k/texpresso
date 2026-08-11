@@ -527,8 +527,10 @@ static void push_ckpt(fz_context *ctx, struct wasm_engine *self)
 /* Resume to completion, laying a checkpoint whenever one was armed. */
 static void run_to_end(fz_context *ctx, struct wasm_engine *self)
 {
+  int iters = 0;
   while (wasm_engine_run())
   {
+    iters++;
     if (self->deferred)
     {
       self->suspended = true;
@@ -543,6 +545,9 @@ static void run_to_end(fz_context *ctx, struct wasm_engine *self)
     }
   }
   self->suspended = false;
+  if (getenv("TEXPRESSO_TRACE_REPLAY"))
+    fprintf(stderr, "[REPLAY] run_to_end: %d yields, doc_seen=%d, trace_len=%d\n",
+            iters, self->doc_entry ? self->doc_entry->seen : -1, self->trace_len);
 }
 
 /* Shared tail of a completed run. */
@@ -626,6 +631,13 @@ static void do_replay(fz_context *ctx, struct wasm_engine *self)
 
   int k = compute_fences(self, self->edit_pos);
   struct wasm_ckpt *c = &self->ckpts[k];
+
+  if (getenv("TEXPRESSO_TRACE_REPLAY"))
+    fprintf(stderr,
+            "[REPLAY] edit_pos=%d n_ckpts=%d -> k=%d (doc_pos=%d trace_len=%d) "
+            "trace_len_now=%d doc_seen=%d\n",
+            self->edit_pos, self->n_ckpts, k, c->doc_pos, c->trace_len,
+            self->trace_len, self->doc_entry ? self->doc_entry->seen : -1);
 
   wasm_engine_restore_to(k);
   log_rollback(ctx, self->log, c->mark);

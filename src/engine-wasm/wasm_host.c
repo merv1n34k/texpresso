@@ -74,6 +74,7 @@ static int g_yield_next_read; /* request: suspend on the next fd_read */
 static int g_suspended;     /* engine is currently suspended in fd_read */
 static unsigned long long g_run_hash = 1469598103934665603ull; /* FNV-1a */
 static int g_trace; /* TEXPRESSO_TRACE: log openat/mmap for debugging */
+static int g_trace_snap; /* TEXPRESSO_TRACE_REPLAY: log the snapshot stack */
 /* Virtualized clock: a fixed epoch (seconds), constant for the whole process so
  * snapshot/replay is deterministic. From $SOURCE_DATE_EPOCH, else read once at
  * startup. All time sources below derive from it; the engine reads it once and
@@ -1093,6 +1094,17 @@ static int snapshot_push(void) {
   if (g_nlayers == 0) g_cow_base = m->w2c_memory.data;
   g_cow_size = m->w2c_memory.size; /* current live size (monotonic within a run) */
   layer_capture(&g_layers[g_nlayers++]);
+  if (g_trace_snap)
+  {
+    snap_layer *L = &g_layers[g_nlayers - 1];
+    fprintf(stderr,
+            "[SNAP] push #%d: cow_size=%llu mem=%llu cap=%llu "
+            "stack[off=%llu len=%llu] sp=%p\n",
+            g_nlayers - 1, (unsigned long long)g_cow_size,
+            (unsigned long long)L->meminfo.size, (unsigned long long)L->cap,
+            (unsigned long long)L->stack_off, (unsigned long long)L->stack_len,
+            (void *)g_engine_sp);
+  }
   mprotect(g_cow_base, g_cow_size, PROT_READ); /* new window catches writes */
   g_cow_active = 1;
   return g_nlayers - 1;
@@ -1114,6 +1126,15 @@ static void snapshot_restore_to(int k) {
                (size_t)g_pg);
   }
   snap_layer *K = &g_layers[k];
+  if (g_trace_snap)
+    fprintf(stderr,
+            "[SNAP] restore_to(%d) of %d: cow_size=%llu K.mem=%llu K.cap=%llu "
+            "zero=%lld stack[off=%llu len=%llu] done=%d\n",
+            k, g_nlayers, (unsigned long long)g_cow_size,
+            (unsigned long long)K->meminfo.size, (unsigned long long)K->cap,
+            (long long)((int64_t)g_cow_size - (int64_t)K->meminfo.size),
+            (unsigned long long)K->stack_off, (unsigned long long)K->stack_len,
+            g_engine_done);
   if (g_cow_size > K->meminfo.size) /* zero what grew past fence k's live size */
     memset(g_cow_base + K->meminfo.size, 0, g_cow_size - K->meminfo.size);
   *m = K->mod;              /* wasm globals (shadow-stack pointer et al.) */
@@ -1139,6 +1160,7 @@ int wasm_engine_init(int argc, char **argv) {
   g_argc = argc;
   g_argv = argv;
   g_trace = getenv("TEXPRESSO_TRACE") != NULL;
+  g_trace_snap = getenv("TEXPRESSO_TRACE_REPLAY") != NULL;
   const char *sde = getenv("SOURCE_DATE_EPOCH");
   g_epoch = sde ? atoll(sde) : (long long)time(NULL);
 
