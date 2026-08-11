@@ -630,6 +630,19 @@ static void do_replay(fz_context *ctx, struct wasm_engine *self)
   wasm_host_set_io(&wasm_state_io_ops, self);
 
   int k = compute_fences(self, self->edit_pos);
+
+  /* Checkpoint 0 is taken before the format is undumped: TeX reads the job file
+   * once looking for a %&format line, and the base checkpoint lands on that read.
+   * Restoring it drops the engine back inside its own start-up, which then
+   * re-reads the whole format anyway — so it costs a full run and only differs
+   * from one by resuming mid-initialisation, which does not survive on every
+   * platform. Re-run instead; deeper checkpoints resume an initialised engine
+   * and are the ones that actually save work. */
+  if (k == 0)
+  {
+    do_run(ctx, self);
+    return;
+  }
   struct wasm_ckpt *c = &self->ckpts[k];
 
   if (getenv("TEXPRESSO_TRACE_REPLAY"))
